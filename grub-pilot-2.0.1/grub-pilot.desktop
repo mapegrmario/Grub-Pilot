@@ -1,0 +1,16 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Grub Pilot
+Name[de]=Grub Pilot
+GenericName=GRUB Configurator
+GenericName[de]=GRUB-Konfigurationswerkzeug
+Comment=Secure GRUB bootloader management tool
+Comment[de]=Sicheres GRUB-Bootloader-Verwaltungsprogramm
+Exec=/usr/local/bin/grub-pilot-gui
+Icon=/usr/share/icons/grub-pilot/icon.png
+Terminal=false
+Categories=System;Settings;
+Keywords=grub;boot;bootloader;startup;
+StartupNotify=true
+StartupWMClass=GrubPilot

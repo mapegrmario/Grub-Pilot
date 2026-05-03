@@ -1,0 +1,71 @@
+#!/bin/bash
+# Grub Pilot – GUI-Starter (kein apt/pip wenn Module bereits vorhanden)
+
+INSTALL_DIR='/opt/grub-pilot'
+SCRIPT="${INSTALL_DIR}/grub_pilot_gui.py"
+
+CANDIDATES=(
+  "${INSTALL_DIR}/venv/bin/python3"
+  /usr/bin/python3
+  /usr/bin/python3.13
+  /usr/bin/python3.12
+  /usr/bin/python3.11
+  /usr/bin/python3.10
+)
+
+find_python() {
+  for py in "${CANDIDATES[@]}"; do
+    [ -x "${py}" ] || continue
+    "${py}" -c "import customtkinter" 2>/dev/null && echo "${py}" && return 0
+  done
+  return 1
+}
+
+# ── Schritt 1: Sofort starten wenn alles vorhanden ───────────────────────────
+FOUND=$(find_python)
+if [ -n "${FOUND}" ]; then
+  exec "${FOUND}" "${SCRIPT}" "$@"
+fi
+
+# ── Schritt 2: tkinter prüfen und ggf. installieren ──────────────────────────
+if ! python3 -c "import tkinter" 2>/dev/null; then
+  PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+  echo "→ tkinter fehlt – versuche: sudo apt-get install -y python${PY_VER}-tk"
+  sudo apt-get install -y -qq "python${PY_VER}-tk" 2>/dev/null \
+    && echo "→ python${PY_VER}-tk installiert." \
+    || { echo "⚠ tkinter konnte nicht installiert werden."; }
+fi
+
+# ── Schritt 3: customtkinter installieren ────────────────────────────────────
+if ! python3 -c "import customtkinter" 2>/dev/null; then
+  echo "→ 'customtkinter' nicht gefunden. Versuche Installation..."
+  pip3 install --user --quiet customtkinter pillow 2>/dev/null \
+    && echo "→ Installation (--user) erfolgreich." \
+    || true
+  [ -x "${INSTALL_DIR}/venv/bin/pip" ] && \
+    "${INSTALL_DIR}/venv/bin/pip" install --quiet customtkinter pillow 2>/dev/null \
+    && echo "→ Installation ins venv erfolgreich." || true
+fi
+
+# ── Schritt 4: Nochmal suchen ────────────────────────────────────────────────
+FOUND=$(find_python)
+
+if [ -z "${FOUND}" ]; then
+  PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════╗"
+  if ! python3 -c "import tkinter" 2>/dev/null; then
+    echo "║  FEHLER: tkinter fehlt                                       ║"
+    echo "║  sudo apt-get install python${PY_VER}-tk                    ║"
+  else
+    echo "║  FEHLER: customtkinter nicht gefunden                        ║"
+    echo "║  pip3 install --user customtkinter                          ║"
+  fi
+  echo "╚══════════════════════════════════════════════════════════════╝"
+  mkdir -p ~/.local/share/grub-pilot
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] Abhängigkeit fehlt" \
+    >> ~/.local/share/grub-pilot/gui.log 2>/dev/null || true
+  exit 1
+fi
+
+exec "${FOUND}" "${SCRIPT}" "$@"

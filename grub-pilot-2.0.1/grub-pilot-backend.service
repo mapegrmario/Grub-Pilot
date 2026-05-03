@@ -1,0 +1,30 @@
+[Unit]
+Description=Grub Pilot Backend D-Bus Service
+Documentation=https://github.com/mapegr/grub-pilot
+After=dbus.service polkit.service
+Requires=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.grubpilot.backend
+ExecStart=/opt/grub-pilot/venv/bin/python3 /opt/grub-pilot/grub_pilot_backend.py
+User=root
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# Security hardening
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=false
+NoNewPrivileges=false
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=grub-pilot-backend
+
+[Install]
+WantedBy=multi-user.target
